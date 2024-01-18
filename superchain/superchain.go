@@ -405,23 +405,22 @@ var Implementations = map[uint64]ContractImplementations{}
 var SuperchainSemver ContractVersions
 
 func init() {
-	var err error
-	SuperchainSemver, err = newContractVersions()
-	if err != nil {
-		panic(fmt.Errorf("failed to read semver.yaml: %w", err))
-	}
-
-	err = populateExportsFromConfigs()
+	err := populateExportsFromConfigs()
 	if err != nil {
 		panic(fmt.Errorf("configs failed validation: %w", err))
 	}
-
 }
 
 // populateExportsFromConfigs will read and decode superchain configurations from the "configs" directory, and populate
 // the various exported mappings accordingly.
 // Returns an error if reading or decoding fails, or if a duplicate chain ID is found.
 func populateExportsFromConfigs() error {
+	var err error
+	SuperchainSemver, err = newContractVersions()
+	if err != nil {
+		return fmt.Errorf("failed to read semver.yaml: %w", err)
+	}
+
 	superchainTargets, err := superchainFS.ReadDir("configs")
 	if err != nil {
 		return fmt.Errorf("failed to read superchain dir: %w", err)
