@@ -89,7 +89,7 @@ func TestContractImplementations(t *testing.T) {
 // TestContractVersionsCheck will fail if the superchain semver file
 // is not read correctly.
 func TestContractVersionsCheck(t *testing.T) {
-	if err := SuperchainSemver.Check(); err != nil {
+	if err := SuperchainSemver.Validate(); err != nil {
 		t.Fatal(err)
 	}
 }

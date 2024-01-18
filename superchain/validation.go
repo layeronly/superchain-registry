@@ -14,15 +14,15 @@ func validateConfigs(Superchains map[string]*Superchain,
 	Implementations map[uint64]ContractImplementations,
 	SuperchainSemver ContractVersions,
 ) error {
-	if err := SuperchainSemver.Check(); err != nil {
+	if err := SuperchainSemver.Validate(); err != nil {
 		return fmt.Errorf("semver.yaml is invalid: %w", err)
 	}
 	return nil
 }
 
-// Check will sanity check the validity of the semantic version strings
+// Validate will sanity check the validity of the semantic version strings
 // in the ContractVersions struct.
-func (c ContractVersions) Check() error {
+func (c ContractVersions) Validate() error {
 	val := reflect.ValueOf(c)
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
