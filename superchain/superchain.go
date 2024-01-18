@@ -408,9 +408,20 @@ func init() {
 		panic(fmt.Errorf("failed to read semver.yaml: %w", err))
 	}
 
+	err = populateExportsFromConfigs()
+	if err != nil {
+		panic(fmt.Errorf("configs failed validation: %w", err))
+	}
+
+}
+
+// validateConfigs will read and decode superchain configurations from the "configs" directory, and populate
+// the various exported mappings accordingly.
+// Returns an error if reading or decoding fails, or if a duplicate chain ID is found.
+func populateExportsFromConfigs() error {
 	superchainTargets, err := superchainFS.ReadDir("configs")
 	if err != nil {
-		panic(fmt.Errorf("failed to read superchain dir: %w", err))
+		return fmt.Errorf("failed to read superchain dir: %w", err)
 	}
 	// iterate over superchain-target entries
 	for _, s := range superchainTargets {
@@ -420,18 +431,18 @@ func init() {
 		// Load superchain-target config
 		superchainConfigData, err := superchainFS.ReadFile(path.Join("configs", s.Name(), "superchain.yaml"))
 		if err != nil {
-			panic(fmt.Errorf("failed to read superchain config: %w", err))
+			return fmt.Errorf("failed to read superchain config: %w", err)
 		}
 		var superchainEntry Superchain
 		if err := yaml.Unmarshal(superchainConfigData, &superchainEntry.Config); err != nil {
-			panic(fmt.Errorf("failed to decode superchain config: %w", err))
+			return fmt.Errorf("failed to decode superchain config: %w", err)
 		}
 		superchainEntry.Superchain = s.Name()
 
 		// iterate over the chains of this superchain-target
 		chainEntries, err := superchainFS.ReadDir(path.Join("configs", s.Name()))
 		if err != nil {
-			panic(fmt.Errorf("failed to read superchain dir: %w", err))
+			return fmt.Errorf("failed to read superchain dir: %w", err)
 		}
 		for _, c := range chainEntries {
 			if c.IsDir() || !strings.HasSuffix(c.Name(), ".yaml") {
@@ -443,39 +454,39 @@ func init() {
 			// load chain config
 			chainConfigData, err := superchainFS.ReadFile(path.Join("configs", s.Name(), c.Name()))
 			if err != nil {
-				panic(fmt.Errorf("failed to read superchain config %s/%s: %w", s.Name(), c.Name(), err))
+				return fmt.Errorf("failed to read superchain config %s/%s: %w", s.Name(), c.Name(), err)
 			}
 			var chainConfig ChainConfig
 			if err := yaml.Unmarshal(chainConfigData, &chainConfig); err != nil {
-				panic(fmt.Errorf("failed to decode chain config %s/%s: %w", s.Name(), c.Name(), err))
+				return fmt.Errorf("failed to decode chain config %s/%s: %w", s.Name(), c.Name(), err)
 			}
 			chainConfig.Chain = strings.TrimSuffix(c.Name(), ".yaml")
 
 			jsonName := chainConfig.Chain + ".json"
 			addressesData, err := extraFS.ReadFile(path.Join("extra", "addresses", s.Name(), jsonName))
 			if err != nil {
-				panic(fmt.Errorf("failed to read addresses data of chain %s/%s: %w", s.Name(), jsonName, err))
+				return fmt.Errorf("failed to read addresses data of chain %s/%s: %w", s.Name(), jsonName, err)
 			}
 			var addrs AddressList
 			if err := json.Unmarshal(addressesData, &addrs); err != nil {
-				panic(fmt.Errorf("failed to decode addresses %s/%s: %w", s.Name(), jsonName, err))
+				return fmt.Errorf("failed to decode addresses %s/%s: %w", s.Name(), jsonName, err)
 			}
 
 			genesisSysCfgData, err := extraFS.ReadFile(path.Join("extra", "genesis-system-configs", s.Name(), jsonName))
 			if err != nil {
-				panic(fmt.Errorf("failed to read genesis system config data of chain %s/%s: %w", s.Name(), jsonName, err))
+				return fmt.Errorf("failed to read genesis system config data of chain %s/%s: %w", s.Name(), jsonName, err)
 			}
 			var genesisSysCfg GenesisSystemConfig
 			if err := json.Unmarshal(genesisSysCfgData, &genesisSysCfg); err != nil {
-				panic(fmt.Errorf("failed to decode genesis system config %s/%s: %w", s.Name(), jsonName, err))
+				return fmt.Errorf("failed to decode genesis system config %s/%s: %w", s.Name(), jsonName, err)
 			}
 
 			chainConfig.Superchain = s.Name()
 			if other, ok := OPChains[chainConfig.ChainID]; ok {
-				panic(fmt.Errorf("found chain config %q in superchain target %q with chain ID %d "+
+				return fmt.Errorf("found chain config %q in superchain target %q with chain ID %d "+
 					"conflicts with chain %q in superchain %q and chain ID %d",
 					chainConfig.Name, chainConfig.Superchain, chainConfig.ChainID,
-					other.Name, other.Superchain, other.ChainID))
+					other.Name, other.Superchain, other.ChainID)
 			}
 			superchainEntry.ChainIDs = append(superchainEntry.ChainIDs, chainConfig.ChainID)
 			OPChains[chainConfig.ChainID] = &chainConfig
@@ -492,6 +503,7 @@ func init() {
 
 		Implementations[superchainEntry.Config.L1.ChainID] = implementations
 	}
+	return nil
 }
 
 // newContractVersions will read the contract versions from semver.yaml
