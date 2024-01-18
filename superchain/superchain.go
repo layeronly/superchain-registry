@@ -263,16 +263,6 @@ func setAddressSetsIfNil(impls *ContractImplementations) {
 // copySemverMap is a concrete implementation of maps.Copy for map[string]Address.
 var copySemverMap = maps.Copy[map[string]Address, map[string]Address]
 
-// canonicalizeSemver will ensure that the version string has a "v" prefix.
-// This is because the semver library being used requires the "v" prefix,
-// even though
-func canonicalizeSemver(version string) string {
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
-	}
-	return version
-}
-
 // Merge will combine two ContractImplementations into one. Any conflicting keys will
 // be overwritten by the arguments. It assumes that nonce of the struct fields are nil.
 func (c ContractImplementations) Merge(other ContractImplementations) {

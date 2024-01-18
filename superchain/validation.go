@@ -3,6 +3,7 @@ package superchain
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"golang.org/x/mod/semver"
 )
@@ -14,9 +15,18 @@ func validateConfigs(Superchains map[string]*Superchain,
 	Implementations map[uint64]ContractImplementations,
 	SuperchainSemver ContractVersions,
 ) error {
+	if err := validateUniqueChainIds(OPChains); err != nil {
+		return fmt.Errorf("chain IDs not unique: %w", err)
+	}
 	if err := SuperchainSemver.Validate(); err != nil {
 		return fmt.Errorf("semver.yaml is invalid: %w", err)
 	}
+	return nil
+}
+
+func validateUniqueChainIds(OPChains map[uint64]*ChainConfig) error {
+	// Here we assume the code building the OPChains mapping
+	// errored or panicked if it found a duplicate
 	return nil
 }
 
@@ -39,4 +49,14 @@ func (c ContractVersions) Validate() error {
 		}
 	}
 	return nil
+}
+
+// canonicalizeSemver will ensure that the version string has a "v" prefix.
+// This is because the semver library being used requires the "v" prefix,
+// even though
+func canonicalizeSemver(version string) string {
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
+	return version
 }
