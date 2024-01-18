@@ -386,16 +386,19 @@ type Superchain struct {
 	Superchain string
 }
 
+// Superchains is a mapping from uncapitalized (name) identifer to *Superchain.
 var Superchains = map[string]*Superchain{}
 
+// OPChains is a mapping from chain Id to *ChainConfig.
 var OPChains = map[uint64]*ChainConfig{}
 
+// Addresses is a mapping from chain ID to *AddressList.
 var Addresses = map[uint64]*AddressList{}
 
+// GenesisSystemConfigs is a mapping from chain ID to *GenesisSystemConfig.
 var GenesisSystemConfigs = map[uint64]*GenesisSystemConfig{}
 
-// Implementations represents a global mapping of contract implementations
-// to chain by chain id.
+// Implementations represents a mapping from chain ID to ContractImplementations.
 var Implementations = map[uint64]ContractImplementations{}
 
 // SuperchainSemver represents a global mapping of contract name to desired semver version.
