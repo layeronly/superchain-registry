@@ -415,7 +415,7 @@ func init() {
 
 }
 
-// validateConfigs will read and decode superchain configurations from the "configs" directory, and populate
+// populateExportsFromConfigs will read and decode superchain configurations from the "configs" directory, and populate
 // the various exported mappings accordingly.
 // Returns an error if reading or decoding fails, or if a duplicate chain ID is found.
 func populateExportsFromConfigs() error {
