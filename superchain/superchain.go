@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"reflect"
 	"strings"
 
 	"golang.org/x/exp/maps"
@@ -201,27 +200,6 @@ type ContractVersions struct {
 	SystemConfig                 string `yaml:"system_config"`
 }
 
-// Check will sanity check the validity of the semantic version strings
-// in the ContractVersions struct.
-func (c ContractVersions) Check() error {
-	val := reflect.ValueOf(c)
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		str, ok := field.Interface().(string)
-		if !ok {
-			return fmt.Errorf("invalid type for field %s", val.Type().Field(i).Name)
-		}
-		if str == "" {
-			return fmt.Errorf("empty version for field %s", val.Type().Field(i).Name)
-		}
-		str = canonicalizeSemver(str)
-		if !semver.IsValid(str) {
-			return fmt.Errorf("invalid semver %s for field %s", str, val.Type().Field(i).Name)
-		}
-	}
-	return nil
-}
-
 // newContractImplementations returns a new empty ContractImplementations.
 // Use this constructor to ensure that none of struct fields are nil.
 // It will also merge the local network implementations into the global implementations
@@ -405,7 +383,11 @@ var Implementations = map[uint64]ContractImplementations{}
 var SuperchainSemver ContractVersions
 
 func init() {
-	err := populateExportsFromConfigs()
+	err := populateExportsFromSourceFiles()
+	if err != nil {
+		panic(fmt.Errorf("could not populate package exports from config source files: %w", err))
+	}
+	err = validateConfigs(Superchains, OPChains, Addresses, GenesisSystemConfigs, Implementations, SuperchainSemver)
 	if err != nil {
 		panic(fmt.Errorf("configs failed validation: %w", err))
 	}
@@ -414,7 +396,7 @@ func init() {
 // populateExportsFromConfigs will read and decode superchain configurations from the "configs" directory, and populate
 // the various exported mappings accordingly.
 // Returns an error if reading or decoding fails, or if a duplicate chain ID is found.
-func populateExportsFromConfigs() error {
+func populateExportsFromSourceFiles() error {
 	var err error
 	SuperchainSemver, err = newContractVersions()
 	if err != nil {
@@ -484,11 +466,11 @@ func populateExportsFromConfigs() error {
 			}
 
 			chainConfig.Superchain = s.Name()
-			if other, ok := OPChains[chainConfig.ChainID]; ok {
+			if existing, ok := OPChains[chainConfig.ChainID]; ok {
 				return fmt.Errorf("found chain config %q in superchain target %q with chain ID %d "+
 					"conflicts with chain %q in superchain %q and chain ID %d",
 					chainConfig.Name, chainConfig.Superchain, chainConfig.ChainID,
-					other.Name, other.Superchain, other.ChainID)
+					existing.Name, existing.Superchain, existing.ChainID)
 			}
 			superchainEntry.ChainIDs = append(superchainEntry.ChainIDs, chainConfig.ChainID)
 			OPChains[chainConfig.ChainID] = &chainConfig
@@ -509,7 +491,6 @@ func populateExportsFromConfigs() error {
 }
 
 // newContractVersions will read the contract versions from semver.yaml
-// and check to make sure that it is valid.
 func newContractVersions() (ContractVersions, error) {
 	var versions ContractVersions
 	semvers, err := semverFS.ReadFile("semver.yaml")
@@ -518,9 +499,6 @@ func newContractVersions() (ContractVersions, error) {
 	}
 	if err := yaml.Unmarshal(semvers, &versions); err != nil {
 		return versions, fmt.Errorf("failed to unmarshal semver.yaml: %w", err)
-	}
-	if err := versions.Check(); err != nil {
-		return versions, fmt.Errorf("semver.yaml is invalid: %w", err)
 	}
 	return versions, nil
 }
