@@ -1,0 +1,21 @@
+name: OnlyLayer
+chain_id: 728696
+public_rpc: https://onlylayer.org/
+sequencer_rpc: https://sequencer.onlylayer.org
+explorer: https://onlyscan.info
+
+superchain_level: 2
+superchain_time: 0 # Missing hardfork times are NOT yet inherited from superchain.yaml
+
+batch_inbox_addr: 0xff00000000000000000000000000000000042069
+
+genesis:
+  l1:
+    hash: 0xe174f62632e9d20e2f8f1121dc4a0dd3896559f4abb8c0d471b2dc97a8699b31
+    number: 5171324
+  l2:
+    hash: 0x716d0562bfa0986632025953553c7f0674297ab154e0de4418586f10395c8a87
+    number: 0
+  l2_time: 1706453856 # Sun 28 Jan 2024 14:57:36 UTC
+
+canyon_time: 0 # Thu 1 Jan 1970 00:00:00 UTC
